@@ -1,0 +1,103 @@
+/* ===== HEADER FIXE ===== */
+
+.sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+}
+
+/* S'assurer que le header a un fond solide */
+header {
+  background: white !important;
+}
+
+/* Ajustement pour le contenu sous le header fixe */
+main.container-fluid {
+  padding-top: 0.5rem !important;
+}
+
+/* Pour éviter que le contenu passe derrière le header fixe */
+.min-vh-100.bg-light {
+  padding-top: 0;
+}
+
+/* Ajustement spécifique pour le layout des notes */
+.min-vh-100.bg-light > main {
+  margin-top: 0 !important;
+}
+
+/* Header plus compact pour le fixe */
+header .py-3 {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+/* Sur mobile, ajuster l'espacement */
+@media (max-width: 767.98px) {
+  .sticky-top {
+    position: sticky;
+    top: 0;
+  }
+  
+  main.container-fluid {
+    padding-top: 0.25rem !important;
+  }
+  
+  header .py-3 {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+}
+
+/* Très petits écrans */
+@media (max-width: 360px) {
+  header .py-3 {
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
+  }
+}
+
+.notes-list {
+  background: transparent;
+}
+
+.note-item {
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.note-item:hover {
+  border-color: #007bff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+.note-item:hover .action-buttons {
+  opacity: 1 !important;
+}
+
+/* Style pour les séparateurs */
+hr {
+  border: 0;
+  border-top: 2px dashed #e9ecef;
+  opacity: 0.6;
+}
+
+/* Titre des notes */
+.note-item h3 {
+  color: #2c3e50;
+  font-weight: 700 !important;
+}
+
+/* Responsive pour le nouveau style */
+@media (max-width: 767.98px) {
+  .note-item {
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  .note-item h3 {
+    font-size: 1.1rem;
+  }
+}
