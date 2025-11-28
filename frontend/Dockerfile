@@ -25,4 +25,4 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
 
 # On lance Nginx au premier plan pour que le conteneur ne s'arrete pas
-CMD [ "nginx", "-g", "deamon off;" ]
+CMD [ "nginx", "-g", "daemon off;" ]

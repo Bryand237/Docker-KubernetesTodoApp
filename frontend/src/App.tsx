@@ -3,6 +3,7 @@ import Login from './components/login';
 import Register from './components/register';
 import Layout from './pages/layout';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 import './App.css';
 
 const App: React.FC = () => {

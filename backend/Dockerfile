@@ -11,8 +11,8 @@ RUN pip install -r requirements.txt
 # On copie le code source
 COPY . .
 
-# On expose le port (ex: 5000 pour Flask)
-EXPOSE 5000
+# On expose le port du serveur Flask
+EXPOSE 5500
 
 # La commande de demarage
 CMD [ "python", "main.py" ]

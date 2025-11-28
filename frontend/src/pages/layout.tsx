@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import Header from '../components/header';
-import AddTodoModal from '../components/addtodomodal';
+import React, { useState } from "react";
+import Header from "../components/header";
+import AddTodoModal from "../components/addtodomodal";
+import EditTodoModal from "../components/editTodoModal";
+import DeleteTodoModal from "../components/deleteTodoModal";
 
-interface TodoItem {
+export interface TodoItem {
   id: string;
   title: string;
   description: string;
@@ -10,55 +12,114 @@ interface TodoItem {
 }
 
 const Layout: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
-  const [todos, setTodos] = useState<TodoItem[]>([
-    {
-      id: '1',
-      title: 'Réunion importante',
-      description: 'Présentation du nouveau plan d\'action de la DAAC',
-      date: '2025-11-06'
-    },
-    {
-      id: '2',
-      title: 'dédibbbb',
-      description: 'sfasdsdfdfdsdds',
-      date: '2025-11-02'
-    },
-    {
-      id: '3',
-      title: 'aslasi',
-      description: 'ssijkdfdkdd',
-      date: '2025-11-05'
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const apiBase = (() => {
+    // En dev, utiliser le proxy Vite (/api)
+    // En docker-compose (frontend:8080), cibler backend exposé sur 5500
+    if (typeof window !== "undefined" && window.location.port === "8080") {
+      return "http://localhost:5500";
     }
-  ]);
-  
-  const [showModal, setShowModal] = useState(false);
+    return "/api";
+  })();
 
-  const handleAddTodo = (title: string, description: string, date: string) => {
-    const newTodo: TodoItem = {
-      id: Date.now().toString(),
-      title,
-      description,
-      date
+  React.useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${apiBase}/todos`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: TodoItem[] = await res.json();
+        setTodos(data);
+      } catch (e: any) {
+        setError(e?.message || "Erreur de chargement");
+      } finally {
+        setLoading(false);
+      }
     };
-    setTodos([newTodo, ...todos]);
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedTodo, setSelectedTodo] = useState<TodoItem | null>(null);
+
+  const handleAddTodo = async (
+    title: string,
+    description: string,
+    date: string
+  ) => {
+    try {
+      const res = await fetch(`${apiBase}/todos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, date }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const created: TodoItem = await res.json();
+      setTodos((prev) => [created, ...prev]);
+    } catch (e) {
+      // Optionnel: notifier
+    }
   };
 
-  const handleEditTodo = (id: string) => {
-    alert(`Modifier la note: ${id}`);
+  const openEditModal = (id: string) => {
+    setSelectedTodo(todos.find((todo) => todo.id === id) || null);
+    setShowEditModal(true);
   };
 
-  const handleDeleteTodo = (id: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
-      setTodos(todos.filter(todo => todo.id !== id));
+  const saveEditedTodo = async (
+    id: string,
+    title: string,
+    description: string,
+    date: string
+  ) => {
+    try {
+      const res = await fetch(`${apiBase}/todos/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, date }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const updated: TodoItem = await res.json();
+      setTodos((prev) => prev.map((t) => (t.id === id ? updated : t)));
+    } catch (e) {
+      // Optionnel: notifier
+    } finally {
+      setShowEditModal(false);
+      setSelectedTodo(null);
+    }
+  };
+
+  const openDeleteModal = (id: string) => {
+    setSelectedTodo(todos.find((todo) => todo.id === id) || null);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async (id: string) => {
+    try {
+      const res = await fetch(`${apiBase}/todos/${id}`, { method: "DELETE" });
+      if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
+      setTodos((prev) => prev.filter((t) => t.id !== id));
+    } catch (e) {
+      // Optionnel: notifier
+    } finally {
+      setShowDeleteModal(false);
+      setSelectedTodo(null);
     }
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
+    return date.toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   };
 
@@ -66,14 +127,11 @@ const Layout: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     <div className="min-vh-100 bg-light">
       {/* Header fixe */}
       <div className="sticky-top">
-        <Header 
-          onAddTodo={() => setShowModal(true)}
-          onLogout={onLogout}
-        />
+        <Header onAddTodo={() => setShowModal(true)} onLogout={onLogout} />
       </div>
-      
+
       {/* Contenu défilant */}
-      <main className="container-fluid py-4" style={{ marginTop: '0px' }}>
+      <main className="container-fluid py-4" style={{ marginTop: "0px" }}>
         <div className="row justify-content-center">
           <div className="col-12 col-lg-8 col-xl-6">
             {/* En-tête des notes */}
@@ -82,44 +140,49 @@ const Layout: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                 <i className="bi bi-journal-text me-2"></i>
                 Notes
               </h2>
-              <span className="badge bg-primary fs-6">{todos.length} notes</span>
+              <span className="badge bg-primary fs-6">
+                {todos.length} notes
+              </span>
             </div>
 
             {/* Liste des notes - Style comme l'image */}
             <div className="notes-list">
+              {loading && <div className="text-muted">Chargement...</div>}
+              {error && <div className="text-danger">{error}</div>}
               {todos.map((todo, index) => (
                 <div key={todo.id}>
                   {/* Note individuelle */}
                   <div className="note-item bg-white rounded p-4 mb-4 shadow-sm">
                     {/* Titre en gras comme sur l'image */}
-                    <h3 className="h5 fw-bold text-dark mb-2">
-                      {todo.title}
-                    </h3>
-                    
+                    <h3 className="h5 fw-bold text-dark mb-2">{todo.title}</h3>
+
                     {/* Description */}
                     {todo.description && (
-                      <p className="text-muted mb-3">
-                        {todo.description}
-                      </p>
+                      <p className="text-muted mb-3">{todo.description}</p>
                     )}
-                    
+
                     {/* Date */}
                     <div className="d-flex align-items-center">
                       <i className="bi bi-calendar3 text-muted me-2"></i>
-                      <span className="text-muted">{formatDate(todo.date)}</span>
-                      
+                      <span className="text-muted">
+                        {formatDate(todo.date)}
+                      </span>
+
                       {/* Boutons d'action qui apparaissent au survol */}
-                      <div className="action-buttons ms-auto opacity-0" style={{ transition: 'opacity 0.2s ease' }}>
-                        <button 
+                      <div
+                        className="action-buttons ms-auto opacity-0"
+                        style={{ transition: "opacity 0.2s ease" }}
+                      >
+                        <button
                           className="btn btn-outline-primary btn-sm me-1"
-                          onClick={() => handleEditTodo(todo.id)}
+                          onClick={() => openEditModal(todo.id)}
                           title="Modifier"
                         >
                           <i className="bi bi-pencil"></i>
                         </button>
-                        <button 
+                        <button
                           className="btn btn-outline-danger btn-sm"
-                          onClick={() => handleDeleteTodo(todo.id)}
+                          onClick={() => openDeleteModal(todo.id)}
                           title="Supprimer"
                         >
                           <i className="bi bi-trash"></i>
@@ -129,9 +192,7 @@ const Layout: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                   </div>
 
                   {/* Ligne de séparation comme sur l'image */}
-                  {index < todos.length - 1 && (
-                    <hr className="my-4" />
-                  )}
+                  {index < todos.length - 1 && <hr className="my-4" />}
                 </div>
               ))}
             </div>
@@ -141,7 +202,7 @@ const Layout: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
               <div className="text-center py-5">
                 <i className="bi bi-journal-x display-1 text-muted"></i>
                 <p className="text-muted mt-3">Aucune note pour le moment</p>
-                <button 
+                <button
                   className="btn btn-primary mt-2"
                   onClick={() => setShowModal(true)}
                 >
@@ -159,6 +220,22 @@ const Layout: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         show={showModal}
         onClose={() => setShowModal(false)}
         onSave={handleAddTodo}
+      />
+
+      {/* Modal de suppression */}
+      <DeleteTodoModal
+        id={selectedTodo?.id || ""}
+        show={showDeleteModal && !!selectedTodo}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+      />
+
+      {/* Modal de modification */}
+      <EditTodoModal
+        todo={selectedTodo || undefined}
+        showModal={showEditModal && !!selectedTodo}
+        onClose={() => setShowEditModal(false)}
+        onEdit={saveEditedTodo}
       />
     </div>
   );

@@ -1,27 +1,44 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 
-interface AddTodoModalProps {
-  show: boolean;
+interface editTodoModalProps {
+  todo?: {
+    id: string;
+    title: string;
+    description: string;
+    date: string;
+  };
+  showModal: boolean;
   onClose: () => void;
-  onSave: (title: string, description: string, date: string) => void;
+  onEdit: (
+    id: string,
+    title: string,
+    description: string,
+    date: string
+  ) => void;
 }
 
-const AddTodoModal: React.FC<AddTodoModalProps> = ({
-  show,
+const EditTodoModal: React.FC<editTodoModalProps> = ({
+  todo,
+  showModal,
   onClose,
-  onSave,
+  onEdit,
 }) => {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [title, setTitle] = useState(todo?.title ?? "");
+  const [description, setDescription] = useState(todo?.description ?? "");
+  const [date, setDate] = useState(todo?.date ?? "");
+  useEffect(() => {
+    setTitle(todo?.title ?? "");
+    setDescription(todo?.description ?? "");
+    setDate(todo?.date ?? "");
+  }, [todo, showModal]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (title.trim() && description.trim() && date.trim()) {
-      onSave(title, description, date);
+    if (title?.trim() && description?.trim() && date?.trim()) {
+      onEdit(todo?.id as string, title, description, date);
       setTitle("");
       setDescription("");
-      setDate(new Date().toISOString().split("T")[0]);
+      setDate("");
       onClose();
     }
   };
@@ -29,12 +46,11 @@ const AddTodoModal: React.FC<AddTodoModalProps> = ({
   const handleClose = () => {
     setTitle("");
     setDescription("");
-    setDate(new Date().toISOString().split("T")[0]);
+    setDate("");
     onClose();
   };
 
-  if (!show) return null;
-
+  if (!showModal) return null;
   return (
     <div
       className="modal show d-block"
@@ -45,7 +61,7 @@ const AddTodoModal: React.FC<AddTodoModalProps> = ({
           <div className="modal-header">
             <h5 className="modal-title">
               <i className="bi bi-plus-circle me-2 text-primary"></i>
-              Nouvelle note
+              Modification de la note
             </h5>
             <button
               type="button"
@@ -110,9 +126,9 @@ const AddTodoModal: React.FC<AddTodoModalProps> = ({
               >
                 Annuler
               </button>
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="btn btn-success">
                 <i className="bi bi-check-circle me-2"></i>
-                Enregistrer
+                Modifier
               </button>
             </div>
           </form>
@@ -122,4 +138,4 @@ const AddTodoModal: React.FC<AddTodoModalProps> = ({
   );
 };
 
-export default AddTodoModal;
+export default EditTodoModal;
