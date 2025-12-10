@@ -1,32 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 interface RegisterProps {
-  onRegister: () => void;
+  apiBase: string;
+  onRegisterSuccess: () => void;
   onSwitchToLogin: () => void;
 }
 
-const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+const Register: React.FC<RegisterProps> = ({
+  apiBase,
+  onRegisterSuccess,
+  onSwitchToLogin,
+}) => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       alert("Les mots de passe ne correspondent pas !");
       return;
     }
-    
-    console.log('Register attempt:', { name, email, password });
-    onRegister();
+
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${apiBase}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const message =
+          (data as any)?.error || `Erreur d'inscription (HTTP ${res.status})`;
+        throw new Error(message);
+      }
+
+      onRegisterSuccess();
+    } catch (err: any) {
+      setError(err?.message || "Erreur d'inscription");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center">
       <div className="row w-100 justify-content-center">
-        <div className="col-12 col-sm-8 col-md-6 col-lg-5"> {/* MÊME LARGEUR QUE LOGIN */}
+        <div className="col-12 col-sm-8 col-md-6 col-lg-5">
+          {" "}
+          {/* MÊME LARGEUR QUE LOGIN */}
           <div className="card border-0 shadow-lg">
             <div className="card-body p-4 p-md-5">
               {/* En-tête avec icône et nom d'application */}
@@ -34,14 +63,24 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
                 <div className="bg-success bg-gradient rounded-circle d-inline-flex p-3 mb-3">
                   <i className="bi bi-person-plus-fill text-white fs-2"></i>
                 </div>
-                <h2 className="card-title fw-bold text-success mb-2">Créer un compte</h2>
-                <p className="text-muted m-0">Rejoignez TaskFlow dès aujourd'hui</p>
+                <h2 className="card-title fw-bold text-success mb-2">
+                  Créer un compte
+                </h2>
+                <p className="text-muted m-0">
+                  Rejoignez TaskFlow dès aujourd'hui
+                </p>
               </div>
-              
+
               <form onSubmit={handleSubmit}>
+                {error && (
+                  <div className="alert alert-danger" role="alert">
+                    {error}
+                  </div>
+                )}
                 <div className="mb-3">
                   <label htmlFor="name" className="form-label fw-semibold">
-                    <i className="bi bi-person me-2 text-success"></i>Nom complet
+                    <i className="bi bi-person me-2 text-success"></i>Nom
+                    complet
                   </label>
                   <input
                     type="text"
@@ -53,10 +92,11 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
                     required
                   />
                 </div>
-                
+
                 <div className="mb-3">
                   <label htmlFor="email" className="form-label fw-semibold">
-                    <i className="bi bi-envelope me-2 text-success"></i>Adresse email
+                    <i className="bi bi-envelope me-2 text-success"></i>Adresse
+                    email
                   </label>
                   <input
                     type="email"
@@ -68,7 +108,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
                     required
                   />
                 </div>
-                
+
                 <div className="mb-3">
                   <label htmlFor="password" className="form-label fw-semibold">
                     <i className="bi bi-lock me-2 text-success"></i>Mot de passe
@@ -83,10 +123,14 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
                     required
                   />
                 </div>
-                
+
                 <div className="mb-4">
-                  <label htmlFor="confirmPassword" className="form-label fw-semibold">
-                    <i className="bi bi-shield-lock me-2 text-success"></i>Confirmer le mot de passe
+                  <label
+                    htmlFor="confirmPassword"
+                    className="form-label fw-semibold"
+                  >
+                    <i className="bi bi-shield-lock me-2 text-success"></i>
+                    Confirmer le mot de passe
                   </label>
                   <input
                     type="password"
@@ -98,16 +142,20 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
                     required
                   />
                 </div>
-                
-                <button type="submit" className="btn btn-success w-100 py-2 mb-3 fw-semibold">
+
+                <button
+                  type="submit"
+                  className="btn btn-success w-100 py-2 mb-3 fw-semibold"
+                  disabled={loading}
+                >
                   <i className="bi bi-person-plus me-2"></i>
-                  Créer mon compte
+                  {loading ? "Création en cours..." : "Créer mon compte"}
                 </button>
-                
+
                 <div className="text-center">
                   <span className="text-muted">Déjà un compte ? </span>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="btn btn-link p-0 text-decoration-none fw-semibold"
                     onClick={onSwitchToLogin}
                   >

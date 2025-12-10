@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 services:
   mysql:
@@ -12,7 +12,17 @@ services:
     ports:
       - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-prootpass"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "127.0.0.1",
+          "-u",
+          "root",
+          "-prootpass",
+        ]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -32,6 +42,8 @@ services:
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_NAME=tododb
+      - SECRET_KEY=dev-secret-key
+      - JWT_SECRET_KEY=dev-jwt-secret
       - PYTHONUNBUFFERED=1
     depends_on:
       mysql:

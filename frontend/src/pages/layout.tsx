@@ -11,26 +11,25 @@ export interface TodoItem {
   date: string;
 }
 
-const Layout: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+const Layout: React.FC<{
+  apiBase: string;
+  token: string;
+  onLogout: () => void;
+}> = ({ apiBase, token, onLogout }) => {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const apiBase = (() => {
-    // En dev, utiliser le proxy Vite (/api)
-    // En docker-compose (frontend:8080), cibler backend exposé sur 5500
-    if (typeof window !== "undefined" && window.location.port === "8080") {
-      return "http://localhost:5500";
-    }
-    return "/api";
-  })();
 
   React.useEffect(() => {
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${apiBase}/todos`);
+        const res = await fetch(`${apiBase}/todos`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: TodoItem[] = await res.json();
         setTodos(data);
@@ -57,7 +56,10 @@ const Layout: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     try {
       const res = await fetch(`${apiBase}/todos`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ title, description, date }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -82,7 +84,10 @@ const Layout: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     try {
       const res = await fetch(`${apiBase}/todos/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ title, description, date }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -103,7 +108,12 @@ const Layout: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 
   const confirmDelete = async (id: string) => {
     try {
-      const res = await fetch(`${apiBase}/todos/${id}`, { method: "DELETE" });
+      const res = await fetch(`${apiBase}/todos/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
       setTodos((prev) => prev.filter((t) => t.id !== id));
     } catch (e) {

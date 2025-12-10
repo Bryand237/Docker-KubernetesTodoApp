@@ -20,6 +20,27 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5500
+          env:
+            - name: DB_USER
+              value: "appuser"
+            - name: DB_PASSWORD
+              value: "apppass"
+            - name: DB_HOST
+              value: "todo-mysql"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_NAME
+              value: "tododb"
+            - name: SECRET_KEY
+              value: "k8s-secret-key"
+            - name: JWT_SECRET_KEY
+              value: "k8s-jwt-secret"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5500
+            initialDelaySeconds: 15
+            periodSeconds: 20
 ---
 apiVersion: v1
 kind: Service
@@ -33,5 +54,53 @@ spec:
   ports:
     - port: 5500
       targetPort: 5500
+      protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-mysql
+  labels:
+    app: todo-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-mysql
+  template:
+    metadata:
+      labels:
+        app: todo-mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "rootpass"
+            - name: MYSQL_DATABASE
+              value: "tododb"
+            - name: MYSQL_USER
+              value: "appuser"
+            - name: MYSQL_PASSWORD
+              value: "apppass"
+          ports:
+            - containerPort: 3306
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-mysql
+  labels:
+    app: todo-mysql
+spec:
+  selector:
+    app: todo-mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
       protocol: TCP
   type: ClusterIP
